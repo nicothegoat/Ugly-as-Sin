@@ -1,0 +1,103 @@
+class UaS_FieldSurgeryKit : HDWeapon {
+	int currentWound;
+
+	Default {
+		Inventory.Amount 1;
+		Inventory.MaxAmount 1;
+		Inventory.PickupMessage "Picked up a portable field surgery kit.";
+		Inventory.Icon "ROCKA0";
+		Scale 0.5;
+		+INVENTORY.INVBAR;
+		+INVENTORY.PERSISTENTPOWER;
+		+INVENTORY.IGNORESKILL;
+		+WEAPON.NO_AUTO_SWITCH;
+		//+WEAPON.NOAUTOFIRE;
+	}
+
+	override double, int weaponbulk() {
+		return 10,0;
+	}
+
+	void OpenWound() {
+		if (!owner) { return; }
+		let ownr = HDPlayerPawn(owner);
+
+		if (currentWound > 0) {
+			A_WeaponMessage("You open the wound wider...");
+			ownr.A_PlaySound("imp/melee", CHAN_WEAPON, 0.1);
+			currentWound++;
+			ownr.woundcount++;
+			return;
+		}
+		else if (ownr.unstablewoundcount <= 0) {
+			A_WeaponMessage("You have no bandaged wounds!");
+			return;
+		}
+		else {
+			currentWound = min(random(1, 5), ownr.unstablewoundcount);
+			ownr.woundcount += currentWound;
+			ownr.unstablewoundcount -= currentWound;
+			A_WeaponMessage("Opened previously bandaged wound\n"..currentWound);
+			ownr.A_PlaySound("imp/melee", CHAN_WEAPON, 0.1);
+		}
+	}
+
+	states {
+		Spawn:
+			MISL A -1;
+			stop;
+		Select:
+			TNT1 A 1;
+			goto Super::Select;
+		DeselectHold:
+			TNT1 A 1;
+			TNT1 A 0 A_Refire("DeselectHold");
+			TNT1 A 0{
+				A_SelectWeapon("Ring");
+				A_WeaponReady(WRF_NOFIRE);
+			}
+			goto nope;
+		Ready:
+			TNT1 A 1 { invoker.DebugStatus(); }
+			goto Super::Ready;
+		Fire:
+			TNT1 A 35 { invoker.OpenWound(); }
+			goto nope;
+		AltFire:
+			TNT1 A 35 A_WeaponMessage("Close Wound");
+			goto nope;
+		Reload:
+			TNT1 A 35 A_WeaponMessage("Inject");
+			goto nope;
+		User4:
+			TNT1 A 35 A_WeaponMessage("Clean/Remove");
+			goto nope;
+		Zoom:
+			TNT1 A 35 A_WeaponMessage("Next Wound");
+			goto nope;
+		User2:
+			TNT1 A 35 A_WeaponMessage("Switch Anaesthetic/Biofoam/2F");
+			goto nope;
+		User1:
+			TNT1 A 35 { invoker.DebugGiveWounds(); }
+			goto nope;
+	}
+
+	void DebugStatus() {
+		if (!owner) { return; }
+		let ownr = HDPlayerPawn(owner);
+		string statusMessage = "";
+		statusMessage = statusMessage.."Open Wounds "..ownr.woundcount.."\n";
+		statusMessage = statusMessage.."Unstable Wounds "..ownr.unstablewoundcount.."\n";
+		statusMessage = statusMessage.."Old Wounds "..ownr.oldwoundcount.."\n";
+		A_WeaponMessage(statusMessage, 175);
+	}
+
+	void DebugGiveWounds() {
+		if (!owner) { return; }
+		let ownr = HDPlayerPawn(owner);
+
+		ownr.woundcount = random(1, 5);
+		A_WeaponMessage("Gave Wounds!");
+	}
+}

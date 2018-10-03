@@ -48,3 +48,6 @@ version "3.5"
 #include "modules/looting/looting.zsc"
 #include "modules/looting/loottables.zsc"
 #include "modules/looting/flavortext.zsc"
+
+// Medical System
+#include "modules/medical/medical.zsc"
