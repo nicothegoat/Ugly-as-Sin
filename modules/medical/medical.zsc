@@ -1,5 +1,17 @@
 class UaS_FieldSurgeryKit : HDWeapon {
 	int currentWound;
+	int currentTool;
+	string statusMessage, currentMessage;
+
+	enum ToolModes {
+		T_PAINKILLER,
+		T_FORCEPS,
+		T_SALINE,
+		T_BIOFOAM,
+		T_STAPLER,
+		T_SUTURES,
+		T_2F,
+	}
 
 	Default {
 		Inventory.Amount 1;
@@ -20,9 +32,60 @@ class UaS_FieldSurgeryKit : HDWeapon {
 
 	override void DoEffect() {
 		super.DoEffect();
-		if (!owner.player) { return; }
-		//let ownr = HDPlayerPawn(owner);
-		if (invoker.PressingFire()) { OpenWound(); }
+		if ((owner.player.cmd.buttons & BT_USER2) && !(owner.player.oldbuttons & BT_USER2)) { CycleTool(); }
+
+		statusMessage = "\cyField Medical Kit\n\n";
+		switch (currentTool) {
+			case T_PAINKILLER:
+				statusMessage = statusmessage.."\cjAnaesthetic\n";
+				statusMessage = statusmessage.."\cuFast-acting local painkiller.\n";
+				break;
+			case T_FORCEPS:
+				statusMessage = statusmessage.."\cjForcepts\n";
+				statusMessage = statusmessage.."\cuPrecision .\n";
+				break;
+			case T_SALINE:
+				statusMessage = statusmessage.."\cjSaline\n";
+				statusMessage = statusmessage.."\cuSterile flushing/cleaning solution.\n";
+				break;
+			case T_BIOFOAM:
+				statusMessage = statusmessage.."\cjBiofoam\n";
+				statusMessage = statusmessage.."\cuAbsorbant antispetic flesh-analogue.\n";
+				break;
+			case T_STAPLER:
+				statusMessage = statusmessage.."\cjStapler\n";
+				statusMessage = statusmessage.."\cuManual hand-stapler.\n";
+				break;
+			case T_SUTURES:
+				statusMessage = statusmessage.."\cjSutures\n";
+				statusMessage = statusmessage.."\cuHook needle and biodegradable thread.\n";
+				break;
+			case T_2F:
+				statusMessage = statusmessage.."\cjSecond Flesh\n";
+				statusMessage = statusmessage.."\cuAdvanced stem cell and nutrient cocktail.\n";
+				break;
+		}
+
+		statusMessage = statusMessage.."\n\n";
+		statusMessage = statusMessage.."\crTreating\n";
+		if (currentWound == 0) { statusMessage = statusMessage.."\cu-----\n"; }
+		else if (currentWound >= 1 && currentWound <= 2) { statusMessage = statusMessage.."\cgSmall wound\n"; }
+		else if (currentWound >= 3 && currentWound <= 4) { statusMessage = statusMessage.."\cgModerate wound\n"; }
+		else if (currentWound >= 5) { statusMessage = statusMessage.."\cgLarge wound\n"; }
+
+		if ((owner.player.cmd.buttons & BT_ATTACK) && !(owner.player.oldbuttons & BT_ATTACK)) { OpenWound(); }
+		if ((owner.player.cmd.buttons & BT_USER1) && !(owner.player.oldbuttons & BT_USER1)) { DebugGiveWounds(); }
+
+		statusMessage = statusMessage.."\n"..currentMessage;
+
+		DebugStatus();
+
+		A_WeaponMessage(statusMessage);
+	}
+
+	void CycleTool() {
+		currentTool++;
+		if (CurrentTool > T_2F) { CurrentTool = T_PAINKILLER; }
 	}
 
 	void OpenWound() {
@@ -30,74 +93,31 @@ class UaS_FieldSurgeryKit : HDWeapon {
 		let ownr = HDPlayerPawn(owner);
 
 		if (currentWound > 0) {
-			A_WeaponMessage("You open the wound wider...");
+			currentMessage = "Opened the wound wider.\n";
 			ownr.A_PlaySound("imp/melee", CHAN_WEAPON, 0.1);
 			currentWound++;
 			ownr.woundcount++;
 			return;
 		}
 		else if (ownr.unstablewoundcount <= 0) {
-			A_WeaponMessage("You have no bandaged wounds!");
+			currentMessage = "You have no bandaged wounds.\n";
 			return;
 		}
 		else {
 			currentWound = min(random(1, 5), ownr.unstablewoundcount);
 			ownr.woundcount += currentWound;
 			ownr.unstablewoundcount -= currentWound;
-			A_WeaponMessage("Opened previously bandaged wound\n"..currentWound);
+			currentMessage = "Opened previously bandaged wound.\n";
 			ownr.A_PlaySound("imp/melee", CHAN_WEAPON, 0.1);
 		}
 	}
 
-	/*states {
-		Spawn:
-			MISL A -1;
-			stop;
-		Select:
-			TNT1 A 1;
-			goto Super::Select;
-		DeselectHold:
-			TNT1 A 1;
-			TNT1 A 0 A_Refire("DeselectHold");
-			TNT1 A 0{
-				A_SelectWeapon("Ring");
-				A_WeaponReady(WRF_NOFIRE);
-			}
-			goto nope;
-		Ready:
-			TNT1 A 1 { invoker.DebugStatus(); }
-			goto Super::Ready;
-		Fire:
-			TNT1 A 35 { invoker.OpenWound(); }
-			goto nope;
-		AltFire:
-			TNT1 A 35 A_WeaponMessage("Close Wound");
-			goto nope;
-		Reload:
-			TNT1 A 35 A_WeaponMessage("Inject");
-			goto nope;
-		User4:
-			TNT1 A 35 A_WeaponMessage("Clean/Remove");
-			goto nope;
-		Zoom:
-			TNT1 A 35 A_WeaponMessage("Next Wound");
-			goto nope;
-		User2:
-			TNT1 A 35 A_WeaponMessage("Switch Anaesthetic/Biofoam/2F");
-			goto nope;
-		User1:
-			TNT1 A 35 { invoker.DebugGiveWounds(); }
-			goto nope;
-	}*/
-
 	void DebugStatus() {
 		if (!owner) { return; }
 		let ownr = HDPlayerPawn(owner);
-		string statusMessage = "";
 		statusMessage = statusMessage.."Open Wounds "..ownr.woundcount.."\n";
 		statusMessage = statusMessage.."Unstable Wounds "..ownr.unstablewoundcount.."\n";
 		statusMessage = statusMessage.."Old Wounds "..ownr.oldwoundcount.."\n";
-		A_WeaponMessage(statusMessage, 175);
 	}
 
 	void DebugGiveWounds() {
@@ -105,7 +125,7 @@ class UaS_FieldSurgeryKit : HDWeapon {
 		let ownr = HDPlayerPawn(owner);
 
 		ownr.woundcount = random(1, 5);
-		A_WeaponMessage("Gave Wounds!");
+		statusMessage = statusMessage.."Gave Wounds!\n";
 	}
 }
 
