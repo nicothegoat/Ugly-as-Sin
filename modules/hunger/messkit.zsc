@@ -1,3 +1,38 @@
+class UaS_Consumable : HDWeapon {
+	UaS_HungerTracker tracker;
+
+	int energy;
+	int fluid;
+	int bulk;
+	int consumableflags;
+	string description;
+	property Energy: energy;
+	property Fluid: fluid;
+	property Bulk: bulk
+	property Description: description;
+	flagdef Liquid: consumableflags, 0;
+
+	default {
+		UaS_Consumable.Energy 100;
+		UaS_Consumable.Fluid 10;
+		UaS_Consumable.Bulk 5;
+		UaS_Consumable.Description "A generic block of vaguely food-like mush. Probably obtained via console commands.";
+		+UaS_Consumable.Liquid;
+		Inventory.PickupMessage "Picked up a generic consumable. You really shouldn't have this.";
+		Inventory.Icon "HSCVB0";
+		hdweapon.nicename "Consumable";
+		hdweapon.fitsinbackpack true;
+		//hdweapon.refid UAS_HDLD_CONSUME;
+		+INVENTORY.INVBAR;
+		+INVENTORY.PERSISTENTPOWER;
+		+INVENTORY.IGNORESKILL;
+	}
+
+	override double weaponbulk(){
+		return bulk;
+	}
+}
+
 class UaS_MessKit : HDWeapon {
 	UaS_HungerTracker tracker;
 	int biteSize;
