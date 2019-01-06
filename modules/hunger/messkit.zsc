@@ -6,20 +6,24 @@ class UaS_Consumable : HDWeapon {
 	int bulk;
 	int consumableflags;
 	string description;
+	string itemsprite;
+	int itemframe;
 	property Energy: energy;
 	property Fluid: fluid;
-	property Bulk: bulk
+	property Bulk: bulk;
 	property Description: description;
-	flagdef Liquid: consumableflags, 0;
+	property Appearance: itemsprite, itemframe;
+	//flagdef Liquid: consumableflags, 0;
 
 	default {
 		UaS_Consumable.Energy 100;
 		UaS_Consumable.Fluid 10;
 		UaS_Consumable.Bulk 5;
 		UaS_Consumable.Description "A generic block of vaguely food-like mush. Probably obtained via console commands.";
-		+UaS_Consumable.Liquid;
+		UaS_Consumable.Appearance "HSCV", 0; //Sprite name, frame # (A = 0, B = 1, etc)
+		//+UaS_Consumable.Liquid;
 		Inventory.PickupMessage "Picked up a generic consumable. You really shouldn't have this.";
-		Inventory.Icon "HSCVB0";
+		Inventory.Icon "HSCVA0";
 		hdweapon.nicename "Consumable";
 		hdweapon.fitsinbackpack true;
 		//hdweapon.refid UAS_HDLD_CONSUME;
@@ -28,8 +32,20 @@ class UaS_Consumable : HDWeapon {
 		+INVENTORY.IGNORESKILL;
 	}
 
-	override double weaponbulk(){
+	override double weaponbulk() {
 		return bulk;
+	}
+
+	override void BeginPlay() {
+		sprite = GetSpriteIndex(itemsprite);
+		frame = itemframe;
+		super.BeginPlay();
+	}
+
+	States {
+		Spawn:
+			TNT1 A -1;
+			Stop;
 	}
 }
 
