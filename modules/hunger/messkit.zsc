@@ -8,28 +8,31 @@ class UaS_Consumable : HDWeapon {
 	string description;
 	string itemsprite;
 	int itemframe;
+	bool opened;
 	property Energy: energy;
 	property Fluid: fluid;
 	property Bulk: bulk;
 	property Description: description;
 	property Appearance: itemsprite, itemframe;
-	//flagdef Liquid: consumableflags, 0;
+	flagdef Liquid: consumableflags, 0;
 
 	default {
 		UaS_Consumable.Energy 100;
 		UaS_Consumable.Fluid 10;
 		UaS_Consumable.Bulk 5;
 		UaS_Consumable.Description "A generic block of vaguely food-like mush. Probably obtained via console commands.";
-		UaS_Consumable.Appearance "HSCV", 0; //Sprite name, frame # (A = 0, B = 1, etc)
+		UaS_Consumable.Appearance "HSCV", 0; //Sprite name string, frame # (A = 0, B = 1, etc)
 		//+UaS_Consumable.Liquid;
 		Inventory.PickupMessage "Picked up a generic consumable. You really shouldn't have this.";
-		Inventory.Icon "HSCVA0";
+		Inventory.Icon "HSCVA0"; // Should be same as appearance sprite/frame
 		hdweapon.nicename "Consumable";
 		hdweapon.fitsinbackpack true;
 		//hdweapon.refid UAS_HDLD_CONSUME;
 		+INVENTORY.INVBAR;
 		+INVENTORY.PERSISTENTPOWER;
 		+INVENTORY.IGNORESKILL;
+		+WEAPON.NO_AUTO_SWITCH;
+		+WEAPON.CHEATNOTWEAPON;
 	}
 
 	override double weaponbulk() {
@@ -37,16 +40,60 @@ class UaS_Consumable : HDWeapon {
 	}
 
 	override void BeginPlay() {
+		UpdateSprite();
+		super.BeginPlay();
+	}
+
+	void UpdateSprite() {
 		sprite = GetSpriteIndex(itemsprite);
 		frame = itemframe;
-		super.BeginPlay();
+	}
+
+	override void DoEffect() {
+		super.DoEffect();
+		if(!owner.player) { return; }
+		if(!(owner.player.readyweapon is 'UaS_Consumable')) {
+			if(opened) {
+				owner.TakeInventory(self.GetClassName(), 1);
+				console.printf("dropped");
+			}
+			return;
+		}
+		if(owner.player.health <= 0) { return; }
+		UaS_StatusText();
+		if(JustPressed(BT_ATTACK)) { console.printf("pressed fire!"); }
+	}
+
+	void UaS_StatusText() {
+		string message = "===\cj"..nicename.."\c-===\n\n\n";
+		message = message..description.."\n\n\n";
+		if(bLIQUID) { message = message.."\cn"..fluid.."ml\c-\n\n\n"; }
+		else { message = message.."\ce"..energy.."kcal\c-\n\n\n"; }
+		message = message.."Press \caFire\c- to open the package.\n\n";
+		message = message.."Opened packages will be discarded even if not fully consumed!";
+		opened = true;
+		A_WeaponMessage(message, 175);
 	}
 
 	States {
 		Spawn:
-			TNT1 A -1;
+			TNT1 A -1 { invoker.UpdateSprite(); }
 			Stop;
 	}
+
+	//Stolen from HDWeapon and updated slightly to work in this context
+	bool PressingFire(){return owner.player.cmd.buttons&BT_ATTACK;}
+	bool PressingAltfire(){return owner.player.cmd.buttons&BT_ALTATTACK;}
+	bool PressingReload(){return owner.player.cmd.buttons&BT_RELOAD;}
+	bool PressingZoom(){return owner.player.cmd.buttons&BT_ZOOM;}
+	bool PressingAltReload(){return owner.player.cmd.buttons&BT_USER1;}
+	bool PressingFiremode(){return owner.player.cmd.buttons&BT_USER2;}
+	bool PressingUser3(){return owner.player.cmd.buttons&BT_USER3;}
+	bool PressingUnload(){return owner.player.cmd.buttons&BT_USER4;}
+	bool PressingUse(){return owner.player.cmd.buttons&BT_USE;}
+	bool Pressing(int whichbuttons){return owner.player.cmd.buttons&whichbuttons;}
+	bool JustPressed(int whichbutton){return(owner.player.cmd.buttons&whichbutton&&!(owner.player.oldbuttons&whichbutton));}
+	bool JustReleased(int whichbutton){return(!(owner.player.cmd.buttons&whichbutton)&&owner.player.oldbuttons&whichbutton);}
 }
 
 class UaS_MessKit : HDWeapon {
