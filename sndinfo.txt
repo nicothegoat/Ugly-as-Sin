@@ -1,5 +1,6 @@
 UaS/FoodScoop1	dssgload
 UaS/FoodScoop2	dsgrload
+UaS/FoodOpen	dsclaw
 
 $random UaS/FoodScoop {
 	UaS/FoodScoop1
