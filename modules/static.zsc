@@ -13,10 +13,19 @@ class UaS {
 		if(count <= 0) { return; }
 		for(int i = 1; i <= count; i++) {
 			let spawneditem = Actor.Spawn(toSpawn, (pos.x, pos.y, pos.z + 5));
-			if(!spawneditem || randomvel == false) { return; }
-			spawneditem.vel.x += frandom[spawnstuff](-2,2);
-			spawneditem.vel.y += frandom[spawnstuff](-2,2);
-			spawneditem.vel.z += frandom[spawnstuff](1,2);
+			if(!spawneditem) { return; }
+			if(randomvel) {
+				spawneditem.vel.x += frandom[spawnstuff](-2,2);
+				spawneditem.vel.y += frandom[spawnstuff](-2,2);
+				spawneditem.vel.z += frandom[spawnstuff](1,2);
+			}
+			if (spawneditem is 'FourMilAmmo') {
+				let fblock = inventory(actor.spawn("FourMilAmmo",spawneditem.pos));
+				int stack = random(1, count - i);
+				fblock.amount = stack;
+				i += stack;
+				spawneditem.destroy();
+			}
 		}
 	}
 
